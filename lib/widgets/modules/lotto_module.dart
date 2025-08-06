@@ -123,7 +123,6 @@ class LottoHistoryModule extends StatelessWidget {
                       ballSize: 30,
                       spacing: 5,
                     ),
-                    margin: const EdgeInsets.symmetric(vertical: 4),
                   );
                 },
               ),

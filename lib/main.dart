@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutterplay/screens/main_home_screen.dart';
 import 'package:provider/provider.dart';
 import 'viewmodels/lotto_viewmodel.dart';
 import 'screens/lotto_home_screen.dart';
@@ -15,12 +16,12 @@ class LottoApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (context) => LottoViewModel(),
       child: MaterialApp(
-        title: '로또 번호 추첨기',
+        title: 'Flutter Play',
         theme: ThemeData(
           primarySwatch: Colors.blue,
           useMaterial3: true,
         ),
-        home: const LottoHomeScreen(),
+        home: const MainHomeScreen(),
       ),
     );
   }

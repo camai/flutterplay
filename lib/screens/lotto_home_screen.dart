@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../viewmodels/lotto_viewmodel.dart';
 import '../widgets/modules/lotto_module.dart';
 import '../widgets/layouts/responsive_layout.dart';
 import '../theme/app_theme.dart';
