@@ -1,118 +1,127 @@
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../design_system/app_design_system.dart';
+import '../viewmodels/calculator_viewmodel.dart';
 
-void main() => runApp(Calculator());
+typedef ButtonCallback = void Function(String key);
 
 class Calculator extends StatelessWidget {
+  const Calculator({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: CalculatorScreen(),
+    return ChangeNotifierProvider(
+      create: (context) => CalculatorViewModel(),
+      child: const CalculatorScreen(),
     );
   }
 }
 
-typedef BufferFunc = void Function(String key);
-const List<String> OPERATORS = ['+', '-', '*', '/'];
-
 class CalculatorScreen extends StatefulWidget {
+  const CalculatorScreen({super.key});
+  
   @override
-  State<CalculatorScreen> createState() => CalculatorState();
+  State<CalculatorScreen> createState() => _CalculatorScreenState();
 }
 
-class CalculatorState extends State<CalculatorScreen> {
-  double text = 0;
-  String buffer = '';
-  double op1 = 0;
-  double op2 = 0;
-  String operator = '';
-
-  void numberPressed(String key) {
-    if (key == 'C') {
-      buffer = '';
-      showResult(0);
-    } else if (OPERATORS.contains(key)) {
-      op1 = double.parse(buffer);
-      operator = key;
-      buffer = '';
-    } else if (key == '=') {
-      op2 = double.parse(buffer);
-      calculate(op1, op2, operator);
-      buffer = '';
-    } else {
-      buffer += key;
-    }
-  }
-
-  void calculate(double op1, double op2, String operator) {
-    double res = 0.0;
-    if (operator == "+") res = op1 + op2;
-    if (operator == "-") res = op1 - op2;
-    if (operator == '*') res = op1 * op2;
-    if (operator == '/') res = op1 / op2;
-    showResult(res);
-  }
-
-  void showResult(double num) {
-    setState(() {
-      text = num;
-    });
-  }
-
+class _CalculatorScreenState extends State<CalculatorScreen> {
   @override
   Widget build(BuildContext context) {
+    final viewModel = Provider.of<CalculatorViewModel>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('계산기'),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.onPrimary,
+        elevation: 0,
       ),
+      backgroundColor: AppColors.background,
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           children: [
-            // 결과 표시
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                text.toString(),
-                style: const TextStyle(fontSize: 24),
-                textAlign: TextAlign.right,
+            // 디스플레이 영역
+            Flexible(
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(
+                    color: AppColors.onSurfaceVariant.withOpacity(0.12),
+                    width: 1,
+                  ),
+                  boxShadow: AppShadows.xs,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (viewModel.operator.isNotEmpty && !viewModel.waitingForOperand)
+                      Text(
+                        '${viewModel.operand1.toString()} ${viewModel.operator}',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                      ),
+                    const Spacer(),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.bottomRight,
+                      child: Text(
+                        viewModel.display,
+                        style: AppTypography.displaySmall.copyWith(
+                          color: viewModel.hasError ? AppColors.error : AppColors.onSurface,
+                          fontWeight: FontWeight.w300,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.lg),
             
             // 버튼 그리드
-            Expanded(
+            Flexible(
+              flex: 2,
               child: GridView.count(
                 crossAxisCount: 4,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
+                crossAxisSpacing: AppSpacing.sm,
+                mainAxisSpacing: AppSpacing.sm,
                 children: [
-                  CalcButton('7', numberPressed),
-                  CalcButton('8', numberPressed),
-                  CalcButton('9', numberPressed),
-                  FuncButton('+', numberPressed),
+                  // 첫 번째 행
+                  _CalculatorButton('AC', viewModel.onButtonPressed, type: CalculatorButtonType.function),
+                  _CalculatorButton('C', viewModel.onButtonPressed, type: CalculatorButtonType.function),
+                  _CalculatorButton('.', viewModel.onButtonPressed, type: CalculatorButtonType.number),
+                  _CalculatorButton('/', viewModel.onButtonPressed, type: CalculatorButtonType.operator),
                   
-                  CalcButton('4', numberPressed),
-                  CalcButton('5', numberPressed),
-                  CalcButton('6', numberPressed),
-                  FuncButton('-', numberPressed),
+                  // 숫자 행들
+                  _CalculatorButton('7', viewModel.onButtonPressed, type: CalculatorButtonType.number),
+                  _CalculatorButton('8', viewModel.onButtonPressed, type: CalculatorButtonType.number),
+                  _CalculatorButton('9', viewModel.onButtonPressed, type: CalculatorButtonType.number),
+                  _CalculatorButton('*', viewModel.onButtonPressed, type: CalculatorButtonType.operator),
                   
-                  CalcButton('1', numberPressed),
-                  CalcButton('2', numberPressed),
-                  CalcButton('3', numberPressed),
-                  FuncButton('*', numberPressed),
+                  _CalculatorButton('4', viewModel.onButtonPressed, type: CalculatorButtonType.number),
+                  _CalculatorButton('5', viewModel.onButtonPressed, type: CalculatorButtonType.number),
+                  _CalculatorButton('6', viewModel.onButtonPressed, type: CalculatorButtonType.number),
+                  _CalculatorButton('-', viewModel.onButtonPressed, type: CalculatorButtonType.operator),
                   
-                  CalcButton('C', numberPressed),
-                  CalcButton('0', numberPressed),
-                  CalcButton('=', numberPressed),
-                  FuncButton('/', numberPressed),
+                  _CalculatorButton('1', viewModel.onButtonPressed, type: CalculatorButtonType.number),
+                  _CalculatorButton('2', viewModel.onButtonPressed, type: CalculatorButtonType.number),
+                  _CalculatorButton('3', viewModel.onButtonPressed, type: CalculatorButtonType.number),
+                  _CalculatorButton('+', viewModel.onButtonPressed, type: CalculatorButtonType.operator),
+                  
+                  // 마지막 행
+                  _CalculatorButton('0', viewModel.onButtonPressed, type: CalculatorButtonType.number),
+                  Container(), // 빈 공간
+                  Container(), // 빈 공간 
+                  _CalculatorButton('=', viewModel.onButtonPressed, type: CalculatorButtonType.equals),
                 ],
               ),
             ),
@@ -123,51 +132,67 @@ class CalculatorState extends State<CalculatorScreen> {
   }
 }
 
-class CalcButton extends StatelessWidget {
-  final String buttonKey;
-  final BufferFunc func;
+enum CalculatorButtonType { number, operator, function, equals }
 
-  const CalcButton(this.buttonKey, this.func, {super.key});
+class _CalculatorButton extends StatelessWidget {
+  final String label;
+  final ButtonCallback onPressed;
+  final CalculatorButtonType type;
 
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: () => func(buttonKey),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.grey[300],
-        foregroundColor: Colors.black,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-      child: Text(
-        buttonKey,
-        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-}
-
-class FuncButton extends StatelessWidget {
-  final String buttonKey;
-  final BufferFunc func;
-
-  const FuncButton(this.buttonKey, this.func, {super.key});
+  const _CalculatorButton(
+    this.label,
+    this.onPressed, {
+    required this.type,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: () => func(buttonKey),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.orange[600],
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+    Color backgroundColor;
+    Color foregroundColor;
+    
+    switch (type) {
+      case CalculatorButtonType.number:
+        backgroundColor = AppColors.surface;
+        foregroundColor = AppColors.onSurface;
+        break;
+      case CalculatorButtonType.operator:
+        backgroundColor = AppColors.secondary;
+        foregroundColor = AppColors.onSecondary;
+        break;
+      case CalculatorButtonType.function:
+        backgroundColor = AppColors.secondaryContainer;
+        foregroundColor = AppColors.onSecondaryContainer;
+        break;
+      case CalculatorButtonType.equals:
+        backgroundColor = AppColors.primary;
+        foregroundColor = AppColors.onPrimary;
+        break;
+    }
+
+    return Material(
+      color: backgroundColor,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        onTap: () => onPressed(label),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(
+              color: AppColors.onSurfaceVariant.withOpacity(0.12),
+              width: 1,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: AppTypography.titleLarge.copyWith(
+                color: foregroundColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
         ),
-      ),
-      child: Text(
-        buttonKey,
-        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
       ),
     );
   }
